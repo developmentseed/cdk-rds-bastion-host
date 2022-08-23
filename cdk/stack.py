@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING
 
 import boto3
 from aws_cdk import (
@@ -25,19 +25,14 @@ class RdsBastionHost(Stack):
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
+        # Lookup RDS instance details by its identifier
         db_details = self.lookup_db(config.db_instance_identifier)
 
-        sg = ec2.SecurityGroup.from_lookup_by_id(
-            self,
-            "rds_security_group",
-            security_group_id=db_details.vpc_security_group_id,
-        )
-
-        vpc = ec2.Vpc.from_lookup(self, "vpc", vpc_id=db_details.vpc_id)
+        # Create bastion host
         bastion_host = ec2.BastionHostLinux(
             self,
             "bastion-host",
-            vpc=vpc,
+            vpc=ec2.Vpc.from_lookup(self, "vpc", vpc_id=db_details.vpc_id),
             instance_name=Stack.of(self).stack_name,
             instance_type=ec2.InstanceType.of(
                 ec2.InstanceClass.BURSTABLE3, ec2.InstanceSize.MICRO
@@ -45,6 +40,11 @@ class RdsBastionHost(Stack):
         )
 
         # Allow Bastion Host to connect to DB
+        sg = ec2.SecurityGroup.from_lookup_by_id(
+            self,
+            "rds_security_group",
+            security_group_id=db_details.vpc_security_group_id,
+        )
         bastion_host.instance.connections.allow_to(
             sg,
             port_range=ec2.Port.tcp(db_details.port),
@@ -57,12 +57,14 @@ class RdsBastionHost(Stack):
 
     @staticmethod
     def lookup_db(instance_name: str) -> "DbDetails":
-        client: Client = boto3.client("rds")
+        client: "Client" = boto3.client("rds")
         response = client.describe_db_instances(DBInstanceIdentifier=instance_name)
+
         if num_instances := len(response["DBInstances"]) != 1:
             raise Exception(
                 f"Expected 1 DB instance returned, received {num_instances}"
             )
+
         db = response["DBInstances"][0]
         return DbDetails(
             vpc_id=db["DBSubnetGroup"]["VpcId"],
