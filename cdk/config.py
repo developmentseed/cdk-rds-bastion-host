@@ -1,9 +1,9 @@
 from getpass import getuser
-from ipaddress import IPv4Address
+from ipaddress import IPv4Interface
 from typing import List
 
 import aws_cdk
-from pydantic import BaseSettings, Field, HttpUrl, constr
+from pydantic import BaseSettings, Field, constr
 
 
 AwsArn = constr(regex=r"^arn:aws:iam::\d{12}:role/.+")
@@ -47,7 +47,7 @@ class Deployment(BaseSettings):
         description="The instance identifier of database to which we want to connect."
     )
 
-    ipv4_allowlist: List[IPv4Address] = Field(
+    ipv4_allowlist: List[IPv4Interface] = Field(
         default=[],
         description="IPv4 CIDRs that are allowed SSH access to bastion host.",
     )
