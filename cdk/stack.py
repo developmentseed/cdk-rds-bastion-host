@@ -34,16 +34,26 @@ class RdsBastionHost(Stack):
         )
 
         vpc = ec2.Vpc.from_lookup(self, "vpc", vpc_id=db_details.vpc_id)
-        bastion_host = ec2.BastionHostLinux(self, "bastion-host", vpc=vpc)
+        bastion_host = ec2.BastionHostLinux(
+            self,
+            "bastion-host",
+            vpc=vpc,
+            instance_name=Stack.of(self).stack_name,
+            instance_type=ec2.InstanceType.of(
+                ec2.InstanceClass.BURSTABLE3, ec2.InstanceSize.MICRO
+            ),
+        )
 
+        # Allow Bastion Host to connect to DB
         bastion_host.instance.connections.allow_to(
             sg,
             port_range=ec2.Port.tcp(db_details.port),
             description="Allow connection from bastion host",
         )
 
+        # Allow IP access to Bastion Host
         for ipv4 in config.ipv4_allowlist:
-            bastion_host.allow_ssh_access_from(ec2.Peer.ipv4(ipv4))
+            bastion_host.allow_ssh_access_from(ec2.Peer.ipv4(str(ipv4)))
 
     @staticmethod
     def lookup_db(instance_name: str) -> "DbDetails":
