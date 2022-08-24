@@ -6,9 +6,6 @@ import aws_cdk
 from pydantic import BaseSettings, Field, constr
 
 
-AwsArn = constr(regex=r"^arn:aws:iam::\d{12}:role/.+")
-
-
 class Deployment(BaseSettings):
     project: constr(regex=r"^[a-z0-9_\-]+")
     client: str
