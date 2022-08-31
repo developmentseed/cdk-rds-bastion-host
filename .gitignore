@@ -2,3 +2,4 @@ cdk.out
 __pycache__
 cdk.context.json
 .env
+userdata.yaml
