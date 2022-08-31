@@ -3,7 +3,9 @@ from typing import TYPE_CHECKING
 
 import boto3
 from aws_cdk import (
+    CfnOutput,
     Stack,
+    aws_iam as iam,
     aws_ec2 as ec2,
 )
 from constructs import Construct
@@ -28,32 +30,97 @@ class RdsBastionHost(Stack):
         # Lookup RDS instance details by its identifier
         db_details = self.lookup_db(config.db_instance_identifier)
 
-        # Create bastion host
-        bastion_host = ec2.BastionHostLinux(
-            self,
-            "bastion-host",
-            vpc=ec2.Vpc.from_lookup(self, "vpc", vpc_id=db_details.vpc_id),
-            instance_name=Stack.of(self).stack_name,
-            instance_type=ec2.InstanceType.of(
-                ec2.InstanceClass.BURSTABLE3, ec2.InstanceSize.MICRO
-            ),
-        )
+        with open(config.userdata_file, "r") as f:
+            user_data = f.read()
+
+        instance = self.build_instance(vpc_id=db_details.vpc_id, user_data=user_data)
+
+        # Assign elastic IP
+        ec2.CfnEIP(self, "Ip", instance_id=instance.instance_id)
 
         # Allow Bastion Host to connect to DB
-        sg = ec2.SecurityGroup.from_lookup_by_id(
-            self,
-            "rds_security_group",
+        self.allow_db_connection(
+            instance=instance,
             security_group_id=db_details.vpc_security_group_id,
-        )
-        bastion_host.instance.connections.allow_to(
-            sg,
-            port_range=ec2.Port.tcp(db_details.port),
-            description="Allow connection from bastion host",
+            port=db_details.port,
         )
 
         # Allow IP access to Bastion Host
         for ipv4 in config.ipv4_allowlist:
-            bastion_host.allow_ssh_access_from(ec2.Peer.ipv4(str(ipv4)))
+            # instance.connections.allow_ssh_access_from(ec2.Peer.ipv4(str(ipv4)))
+            instance.connections.allow_from(
+                ec2.Peer.ipv4(str(ipv4)), ec2.Port.tcp(22), "SSH access"
+            )
+
+        # Integrate with SSM
+        instance.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=[
+                    "ssmmessages:*",
+                    "ssm:UpdateInstanceInformation",
+                    "ec2messages:*",
+                ],
+                resources=["*"],
+            )
+        )
+
+    def build_instance(
+        self,
+        vpc_id: str,
+        user_data: str,
+    ) -> ec2.IInstance:
+        instance = ec2.Instance(
+            self,
+            f"bastion-host",
+            vpc=ec2.Vpc.from_lookup(self, "vpc", vpc_id=vpc_id),
+            vpc_subnets=ec2.SubnetSelection(subnet_type=ec2.SubnetType.PUBLIC),
+            instance_name=Stack.of(self).stack_name,
+            instance_type=ec2.InstanceType.of(
+                ec2.InstanceClass.BURSTABLE3, ec2.InstanceSize.NANO
+            ),
+            machine_image=ec2.MachineImage.latest_amazon_linux(
+                generation=ec2.AmazonLinuxGeneration.AMAZON_LINUX_2
+            ),
+            user_data=ec2.UserData.custom(user_data),
+            user_data_causes_replacement=True,
+        )
+        CfnOutput(
+            self,
+            "instance-id-output",
+            value=instance.instance_id,
+            export_name="bastion-instance-id",
+        )
+        CfnOutput(
+            self,
+            "instance-public-ip-output",
+            value=instance.instance_public_ip,
+            export_name="bastion-instance-public-ip",
+        )
+        CfnOutput(
+            self,
+            "instance-public-dns-name-output",
+            value=instance.instance_public_dns_name,
+            export_name="bastion-public-dns-name",
+        )
+        return instance
+
+    def allow_db_connection(
+        self,
+        security_group_id: str,
+        instance: ec2.IInstance,
+        port: int,
+    ) -> ec2.ISecurityGroup:
+        sg = ec2.SecurityGroup.from_lookup_by_id(
+            self,
+            "rds_security_group",
+            security_group_id=security_group_id,
+        )
+        instance.connections.allow_to(
+            sg,
+            port_range=ec2.Port.tcp(port),
+            description="Allow connection from bastion host",
+        )
+        return sg
 
     @staticmethod
     def lookup_db(instance_name: str) -> "DbDetails":

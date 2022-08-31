@@ -3,7 +3,7 @@ from ipaddress import IPv4Interface
 from typing import List
 
 import aws_cdk
-from pydantic import BaseSettings, Field, constr
+from pydantic import BaseSettings, Field, constr, DirectoryPath, FilePath
 
 
 class Deployment(BaseSettings):
@@ -48,6 +48,8 @@ class Deployment(BaseSettings):
         default=[],
         description="IPv4 CIDRs that are allowed SSH access to bastion host.",
     )
+
+    userdata_file: FilePath = Field(default="./userdata.yaml")
 
     @property
     def stack_name(self) -> str:
