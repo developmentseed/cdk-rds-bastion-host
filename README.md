@@ -16,10 +16,11 @@ Further information about this pattern of connection can be found here: [Deploy 
 
     - You will likely want to add your external IP address to the `ipv4_allowlist`. You can obtain this value via the following:
 
-      ```py
-      python3 -c "import urllib.request; print(urllib.request.urlopen('https://api.ipify.org').read().decode('utf8'))"
+      ```
+      curl api.ipify.org
       ```
 
+1.  Copy `.userdata.yaml.example` to `.userdata.yaml`, populate as deemed necessary.
 1.  Install system requirements: `poetry install`
 1.  Deploy: `poetry run cdk deploy`
 
