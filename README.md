@@ -4,7 +4,7 @@ CDK Configuration for simplifying the generation of a Bastion Host (aka JumpBox)
 
 ## How it works
 
-At time of deployment, this codebase will look up the RDS Instance by the identifier provided as an environment variable `DB_INSTANCE_IDENTIFIER` and will deploy a bastion host along with updating thee RDS Instance's security to permit incomming traffic from the bastion host. The bastion host will be placed in a _private subnet_, thereby only permitting connections via the [AWS Systems Manager Session Manager](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager.html).
+At time of deployment, this codebase will look up the RDS Instance by the identifier provided as an environment variable `DB_INSTANCE_IDENTIFIER` and will deploy a bastion host along with updating thee RDS Instance's security to permit incomming traffic from the bastion host. The bastion host will be placed in a public subnet and be assigned an Elastic IP address. At startup the user-provided `userdata.yaml` [cloud-config](https://cloudinit.readthedocs.io/en/latest/) file will be run, creating system user in order to allow SSH access.
 
 Further information about this pattern of connection can be found here: [Deploy bastion hosts into private subnets with AWS CDK](https://aws.amazon.com/blogs/infrastructure-and-automation/deploy-bastion-hosts-into-private-subnets-with-aws-cdk/)
 
