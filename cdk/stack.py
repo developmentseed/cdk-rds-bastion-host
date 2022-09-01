@@ -123,8 +123,7 @@ class RdsBastionHost(Stack):
         )
         return sg
 
-    @staticmethod
-    def lookup_db(instance_name: str) -> "DbDetails":
+    def lookup_db(self, instance_name: str) -> "DbDetails":
         client: "Client" = boto3.client("rds")
         response = client.describe_db_instances(DBInstanceIdentifier=instance_name)
 
@@ -134,11 +133,19 @@ class RdsBastionHost(Stack):
             )
 
         db = response["DBInstances"][0]
-        return DbDetails(
+        details = DbDetails(
             vpc_id=db["DBSubnetGroup"]["VpcId"],
             vpc_security_group_id=db["VpcSecurityGroups"][0]["VpcSecurityGroupId"],
             port=db["Endpoint"]["Port"],
         )
+
+        CfnOutput(
+            self,
+            "db-hostname-output",
+            value=db["Endpoint"]["Address"],
+            export_name="db-host",
+        )
+        return details
 
 
 @dataclass
