@@ -13,10 +13,14 @@ stack.RdsBastionHost(
     construct_id=deployment.stack_name,
     config=deployment,
     tags={
-        "Project": deployment.project,
-        "Owner": deployment.owner,
-        "Client": deployment.client,
-        "Stack": deployment.stage,
+        k: v
+        for k, v in {
+            "Project": deployment.project,
+            "Owner": deployment.owner,
+            "Client": deployment.client,
+            "Stack": deployment.stage,
+        }.items()
+        if v
     },
     env=deployment.env,
 )

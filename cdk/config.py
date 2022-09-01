@@ -1,29 +1,29 @@
 from getpass import getuser
 from ipaddress import IPv4Interface
-from typing import List
+from typing import List, Optional
 
 import aws_cdk
 from pydantic import BaseSettings, Field, constr, DirectoryPath, FilePath
 
 
 class Deployment(BaseSettings):
-    project: constr(regex=r"^[a-z0-9_\-]+")
-    client: str
-    stage: str = Field(
-        description=" ".join(
-            [
-                "Stage of deployment (e.g. 'dev', 'prod').",
-                "Used as suffix for stack name.",
-                "Defaults to current username.",
-            ]
-        ),
-        default_factory=getuser,
-    )
+    project: Optional[constr(regex=r"^[a-z0-9_\-]+")]
+    client: Optional[str]
     owner: str = Field(
         description=" ".join(
             [
                 "Name of primary contact for Cloudformation Stack.",
                 "Used to tag generated resources",
+                "Defaults to current username.",
+            ]
+        ),
+        default_factory=getuser,
+    )
+    stage: str = Field(
+        description=" ".join(
+            [
+                "Stage of deployment (e.g. 'dev', 'prod').",
+                "Used as suffix for stack name.",
                 "Defaults to current username.",
             ]
         ),
@@ -45,7 +45,7 @@ class Deployment(BaseSettings):
     )
 
     ipv4_allowlist: List[IPv4Interface] = Field(
-        default=[],
+        default_factory=lambda: [],
         description="IPv4 CIDRs that are allowed SSH access to bastion host.",
     )
 

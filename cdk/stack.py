@@ -47,9 +47,10 @@ class RdsBastionHost(Stack):
 
         # Allow IP access to Bastion Host
         for ipv4 in config.ipv4_allowlist:
-            # instance.connections.allow_ssh_access_from(ec2.Peer.ipv4(str(ipv4)))
             instance.connections.allow_from(
-                ec2.Peer.ipv4(str(ipv4)), ec2.Port.tcp(22), "SSH access"
+                ec2.Peer.ipv4(str(ipv4)),
+                ec2.Port.tcp(22),
+                "SSH access",
             )
 
         # Integrate with SSM
