@@ -51,6 +51,8 @@ class Deployment(BaseSettings):
 
     userdata_file: FilePath = Field(default="./userdata.yaml")
 
+    ssh_port: int = 22
+
     @property
     def stack_name(self) -> str:
         return f"{self.project}-{self.stage}-db-bastion"

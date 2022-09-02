@@ -49,7 +49,7 @@ class RdsBastionHost(Stack):
         for ipv4 in config.ipv4_allowlist:
             instance.connections.allow_from(
                 ec2.Peer.ipv4(str(ipv4)),
-                ec2.Port.tcp(22),
+                ec2.Port.tcp(config.ssh_port),
                 "SSH access",
             )
 

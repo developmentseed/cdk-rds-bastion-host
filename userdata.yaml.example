@@ -4,8 +4,12 @@
 # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/amazon-linux-ami-basics.html#amazon-linux-cloud-init
 
 users:
-  - name: 
+  - name:
     sudo: ALL=(ALL) NOPASSWD:ALL
     shell: /bin/bash
     ssh_authorized_keys:
-      - 
+      -
+
+# Example of changing SSH port (to 33333 in this case)
+# runcmd:
+#   - sed -i -e '/^#Port/s/^.*$/Port 33333/' /etc/ssh/sshd_config
