@@ -13,3 +13,4 @@ users:
 # Example of changing SSH port (to 33333 in this case)
 # runcmd:
 #   - sed -i -e '/^#Port/s/^.*$/Port 33333/' /etc/ssh/sshd_config
+#   - service sshd restart
